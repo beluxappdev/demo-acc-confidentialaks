@@ -18,14 +18,16 @@ This demo has been constructed after going through the following docs ;
   (Please note : by default a quota of max 8 cores is available in your subscription)
 * https://github.com/openenclave/openenclave/tree/master/samples/helloworld
 
-# Prepare your Azure Subscription
-## Login to your Subscription
+# Set up your Confidential Compute powered AKS
+
+## Prepare your Azure Subscription
+### Login to your Subscription
 ```bash
 az login [--use-device-code]
 az account set --subscription "your-subscription-name/guid"
 ```
 
-# Set Variables
+### Set Variables
 ```bash
 rgaks="demo-test-aks"
 nameaks="demoakscluster"
@@ -33,31 +35,31 @@ nameconfpool="confidential"
 region="westeurope"
 ```
 
-# Preparing the Azure Kubernetes environment [pick one variant]
-## Variant A - Seperate nodepool
+## Preparing the Azure Kubernetes environment [pick one variant]
+### Variant A - Seperate nodepool
 ```bash
 az group create --name $rgaks --location $region --output table
 az aks create -g $rgaks -n $nameaks --enable-cluster-autoscaler  --min-count 1 --max-count 4 --enable-addons monitoring --generate-ssh-keys -s "Standard_B4ms" --enable-addons confcom --enable-sgxquotehelper
 az aks nodepool add --cluster-name $nameaks --name $nameconfpool --resource-group $rgaks --node-vm-size "Standard_DC2s_v2"
 ```
 
-## Variant B - Single nodepool
+### Variant B - Single nodepool
 ```bash
 az group create --name $rgaks --location $region --output table
 az aks create -g $rgaks -n $nameaks --enable-cluster-autoscaler  --min-count 1 --max-count 4 --enable-addons monitoring --generate-ssh-keys -s "Standard_DC2s_v2" --enable-addons confcom --enable-sgxquotehelper
 ```
 
-# Get Kubectl Credentials
+## Get Kubectl Credentials
 ```bash
 az aks get-credentials --name $nameaks --resource-group $rgaks
 ```
 
-# Validate SGX running
+## Validate SGX running
 ```bash
 kubectl get pods --all-namespaces | grep -i sgx
 ```
 
-# Validate SGX running
+## Test an SGX Hello World
 ```bash
 kubectl apply -f hello-world-enclave.yaml
 kubectl get jobs -l app=sgx-test
