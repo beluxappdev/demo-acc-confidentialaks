@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: em-agent
+  namespace: default
+  labels:
+    component: em-agent
+spec:
+  selector:
+    matchLabels:
+      component: em-agent
+  template:
+    metadata:
+      labels:
+        component: em-agent
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      volumes:
+      - name: em-agent-data
+        emptyDir: {}
+      - name: dev
+        hostPath:
+          path: /dev
+      - name: var-run-aesmd
+        hostPath:
+          path: /var/run/aesmd
+      - name: agent-manager-auth
+        secret:
+          secretName: agent-manager-auth
+      containers:
+      - name: em-agent
+        image: "fortanix/em-agent"
+        resources:
+          limits:
+            sgx.intel.com/epc: "12Mi"
+          requests:
+            sgx.intel.com/epc: "12Mi"
+        volumeMounts:
+        - name: em-agent-data
+          mountPath: /var/opt/fortanix/em-agent/node
+        - name: dev
+          mountPath: /dev/host
+        - name: var-run-aesmd
+          mountPath: /var/run/aesmd
+        ports:
+        - containerPort: 9092
+          name: http
+          protocol: TCP
+          hostPort: 9092
+        env:
+        - name: AGENT_MANAGER_AUTH_BASIC_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: em-token
+              key: token
+        - name: ATTESTATION_TYPE
+          value: "DCAP"
+        - name: MANAGER_ENDPOINT
+          value: "ccm.fortanix.com:443"
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
